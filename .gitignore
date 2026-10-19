@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+*.gif
+!doc/images/*.gif
+*.mp4
+.venv/
+external/
+CLAUDE.md

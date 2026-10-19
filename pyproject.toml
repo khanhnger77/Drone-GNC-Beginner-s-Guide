@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dronegnc"
+version = "0.1.0"
+description = "Sample programs for learning drone Guidance, Navigation and Control, linked to PX4"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Khanh Ngo" }]
+requires-python = ">=3.9"
+dependencies = ["numpy", "matplotlib"]
+
+[project.urls]
+Homepage = "https://github.com/khanhnger77/Drone-GNC-Beginner-s-Guide"
+Source = "https://github.com/khanhnger77/Drone-GNC-Beginner-s-Guide"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
