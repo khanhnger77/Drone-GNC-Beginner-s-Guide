@@ -30,6 +30,7 @@ Status: ✅ done, ⬜ planned
 | ✅ | 2D planar quadrotor | `vehicle/planar_quadrotor.py` | — |
 | ✅ | 3D quadrotor 6DOF, rotor layout | `vehicle/quadrotor.py` | `src/modules/simulation/simulator_sih`, `ROMFS/px4fmu_common/init.d/airframes/4001_quad_x` (`CA_ROTOR*`) |
 | ✅ | IMU, GPS, baro, mag: noise, bias, rates | `sensors/` | uORB `sensor_combined`, `vehicle_gps_position`, `sensor_baro`, `sensor_mag` |
+| ✅ | 360° range sensor with the `obstacle_distance` layout (72 bins of 5°, bin 0 = North) | `sensors/obstacle_distance_sensor.py`, `simulation/obstacles.py` | `msg/ObstacleDistance.msg` |
 | ⬜ | Motor dynamics (first-order lag), thrust curve | | `THR_MDL_FAC` (`src/lib/mixer_module/motor_params.c`) |
 
 ## Module 2: Control
@@ -43,7 +44,7 @@ Status: ✅ done, ⬜ planned
 | ✅ | Control allocation, yaw desaturation | `control/control_allocation.py` | `src/modules/control_allocator`, `src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp` (`mixYaw`) |
 | ⬜ | Multi-rate loops: each loop runs when its input topic is published (rate ~400 Hz, attitude ~200 Hz, position ~100 Hz) | | `IMU_GYRO_RATEMAX`, `IMU_INTEG_RATE`, `EKF2_PREDICT_US`, `SubscriptionCallbackWorkItem` in `mc_*_control` |
 | ⬜ | Tuning: step response, bandwidth separation | | PID tuning guide, `MC_*` params |
-| ⬜ | LQR / MPC for a quadrotor (extension) | | — |
+| ⬜ | LQR / MPC for a quadrotor (extension; the vehicle repo has LQR, MPC and MPPI path tracking) | | — |
 
 ## Module 3: Navigation (estimation)
 
@@ -61,17 +62,30 @@ The ladder from a textbook EKF to EKF2. Each step adds one idea.
 | ⬜ | 8 | Multiple aiding sources, height source selection | | `src/modules/ekf2/EKF/aid_sources/` |
 | ⬜ | 9 | Run the Python EKF on a real ulog and compare with `estimator_states` | | `ekf2` replay |
 
+Side lessons, from the vehicle repo: UKF and particle filter on the same 2D problem, compared with the EKF
+(the vehicle repo has `ekf_ukf_pf_comparison`). PX4 uses neither, which is itself worth a short explanation.
+
 Tip: in the videos, explain EKF2's math from the Python derivation scripts, not from the generated C++.
 
 ## Module 4: Guidance
+
+The obstacle lessons port ideas from the vehicle repo (AutonomousVehicleControlBeginnersGuide:
+`polar_histogram`, `potential_field`, `astar`, `elastic_bands`, `rrt_star`, `dstar`) to a quadrotor that
+sees obstacles through the PX4 `obstacle_distance` layout.
 
 | | Lesson | Repo | PX4 |
 |---|---|---|---|
 | ✅ | Waypoints with acceptance radius, yaw towards waypoint | `guidance/waypoint_follower.py` | `src/modules/navigator`, `NAV_ACC_RAD`, `MPC_YAW_MODE`, `MPC_YAWRAUTO_MAX` (default 60°/s) |
 | ⬜ | Jerk-limited trajectory generation | | `src/lib/motion_planning/PositionSmoothing.cpp` |
 | ⬜ | Line following for fixed wing (L1 / NPFG) | | `src/lib/npfg` |
-| ⬜ | Path planning in 3D (A*, RRT*) | | — |
-| ⬜ | Obstacle avoidance | | `src/lib/collision_prevention`, `obstacle_distance` |
+| ✅ | Collision prevention: brake towards obstacles, slide along them (Position mode only) | `guidance/collision_prevention.py` | `src/lib/collision_prevention/CollisionPrevention.cpp`, `CP_DIST`, `CP_DELAY` |
+| ✅ | Reactive avoidance with a Vector Field Histogram (VFH+ enlargement) | `guidance/vector_field_histogram.py` | offboard (PX4 has no onboard planner); reads `obstacle_distance` |
+| ✅ | Reactive avoidance with a potential field, and its local minimum (U-trap) | `guidance/potential_field.py` | offboard |
+| ✅ | Global planning: A* on an inflated occupancy grid + shortcut, flown as a mission | `guidance/astar_planner.py` | mission planned off the vehicle, flown by `src/modules/navigator` |
+| ⬜ | Sampling-based planning (RRT, RRT*, informed RRT*) in 3D | | — |
+| ⬜ | Replanning when the map changes (D* Lite) | | — |
+| ⬜ | Path smoothing around obstacles (elastic bands) | | — |
+| ⬜ | Occupancy grid built online from range scans (mapping), then replanning | | — |
 
 ## Module 5: Behavior
 

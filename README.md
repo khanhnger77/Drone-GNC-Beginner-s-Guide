@@ -84,6 +84,23 @@ vehicle rotates slowly, as PX4 does.
 - Run: [`simulations/quadrotor/quadrotor_attitude_complementary_filter.py`](simulations/quadrotor/quadrotor_attitude_complementary_filter.py)
 - PX4: `attitude_estimator_q`
 
+### 6. Obstacle avoidance (3D quadrotor, horizontal plane)
+
+<img src="doc/images/obstacle_avoidance.gif" alt="Collision prevention, VFH, potential field and A* side by side" width="900">
+
+A 360° range sensor publishes the PX4 `obstacle_distance` layout: 72 bins of 5°, bin 0 = North. Four
+lessons use it:
+
+| Lesson | Idea | Result |
+|---|---|---|
+| [`collision_prevention.py`](simulations/avoidance/collision_prevention.py) | PX4 `CollisionPrevention`: limit the speed towards the closest obstacle, keep the speed along it | Stops before the wall, slides along it, stops in the corner. PX4 runs it only in Position mode |
+| [`vfh_obstacle_avoidance.py`](simulations/avoidance/vfh_obstacle_avoidance.py) | Vector Field Histogram: polar histogram → free valleys → direction closest to the goal | Crosses a dense pillar forest |
+| [`potential_field_obstacle_avoidance.py`](simulations/avoidance/potential_field_obstacle_avoidance.py) | Goal attracts, obstacles repel | Fine in a sparse forest, **trapped** in a U-shaped wall (VFH is trapped there too) |
+| [`astar_global_planning.py`](simulations/avoidance/astar_global_planning.py) | A* on an inflated occupancy grid, shortcut to a few waypoints | Plans around the same U |
+
+The message of the series: PX4 itself only brakes (`CP_DIST`). Steering around obstacles is a planner's
+job, done offboard, and reactive planners need a global one to escape traps.
+
 ## Quick start
 
 ```bash
@@ -134,13 +151,14 @@ vehicle.step(rotor_thrusts_n, dt_s)          # 5. move the true vehicle
 src/dronegnc/
   common/         rotation.py: quaternion, DCM, Euler, NED/FRD helpers
   vehicle/        planar_quadrotor.py (2D), quadrotor.py (3D 6DOF)
-  sensors/        IMU, GPS, barometer, magnetometer with noise, bias and their own rates
+  sensors/        IMU, GPS, barometer, magnetometer, 360° range sensor (obstacle_distance)
   estimation/     planar_ekf.py, attitude_complementary_filter.py
   control/        pid.py, cascade controllers, control_allocation.py
-  guidance/       waypoint_follower.py
-  simulation/     history.py (a tiny flight log)
-  visualization/  2D and 3D animations
-simulations/      one script per lesson (planar/, quadrotor/)
+  guidance/       waypoint_follower.py, collision_prevention.py, vector_field_histogram.py,
+                  potential_field.py, astar_planner.py
+  simulation/     history.py (a tiny flight log), obstacles.py (pillars and walls)
+  visualization/  2D, 3D and top-view animations
+simulations/      one script per lesson (planar/, quadrotor/, avoidance/)
 tests/            one test per simulation, checking results (errors, final position)
 doc/              course roadmap, README media
 ```

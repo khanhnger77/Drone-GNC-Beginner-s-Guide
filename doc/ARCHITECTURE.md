@@ -18,7 +18,8 @@ results** on the same scenario. Examples: complementary filter → EKF → error
 waypoint steps → jerk-limited trajectory, ideal motors → motors with lag.
 
 Today the project covers a 2D and a 3D quadrotor, a PX4-style control cascade with control allocation,
-waypoint guidance, a 2D EKF in the loop and a 3D attitude complementary filter. Each lesson is its own
+waypoint guidance, obstacle avoidance on the PX4 `obstacle_distance` layout (collision prevention, VFH,
+potential field, A*), a 2D EKF in the loop and a 3D attitude complementary filter. Each lesson is its own
 hand-wired simulation. Next, we want 3D estimation in the loop, multi-rate loops, actuator and sensor
 realism (motor lag, vibration, latency), trajectory generation, flight modes and failsafes, and a direct
 bridge to real PX4 data (ulog, SITL).
@@ -234,7 +235,7 @@ VTOL transition, and 3D path planning with obstacle avoidance.
 ### Ongoing contributions
 
 - New single-algorithm lessons are welcome at any time. They follow the conventions in
-  [CLAUDE.md](../CLAUDE.md): a module in `src/dronegnc/`, a script in `simulations/`, a test that checks
+  the [README](../README.md#conventions-same-as-px4): a module in `src/dronegnc/`, a script in `simulations/`, a test that checks
   a result, and an update of [COURSE_ROADMAP.md](COURSE_ROADMAP.md). They are connected to the stage
   interfaces when the corresponding phase arrives.
 - Every PX4 reference must point to the pinned tag and be checked against it.

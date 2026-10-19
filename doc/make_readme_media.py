@@ -29,6 +29,7 @@ from dronegnc.vehicle.planar_quadrotor import PlanarQuadrotorParams
 from dronegnc.vehicle.quadrotor import QuadrotorParams
 from dronegnc.visualization.planar_animation import planar_body_outline
 from dronegnc.visualization.quadrotor_animation import ned_to_plot
+from dronegnc.visualization.top_view import draw_obstacles, scan_points_ne
 
 ROOT = Path(__file__).absolute().parent.parent
 OUTPUT_DIR = ROOT / "doc" / "images"
@@ -410,12 +411,74 @@ def make_attitude_complementary_filter():
     save_gif(fig, draw, frame_indices(t, 0.25), "quadrotor_attitude_complementary_filter")
 
 
+def make_obstacle_avoidance():
+    """
+    Four lessons side by side, on one clock: collision prevention, VFH, the potential
+    field trapped in the U, and A* escaping the same U
+    """
+
+    cp_module, cp = run_simulation("avoidance/collision_prevention.py")
+    vfh_module, vfh = run_simulation("avoidance/vfh_obstacle_avoidance.py")
+    apf_module, apf = run_simulation("avoidance/potential_field_obstacle_avoidance.py")
+    astar_module, astar_history = run_simulation("avoidance/astar_global_planning.py")
+    goal = vfh_module.GOAL_NE_M
+    panels = [
+        ("Collision prevention (PX4 CP_DIST)", cp, cp_module.make_world(), None),
+        ("VFH through a pillar forest", vfh, vfh_module.make_world(np.random.default_rng(seed=1)), goal),
+        ("Potential field: trapped in a U", apf["u_trap"], apf_module.make_u_trap(), goal),
+        ("A*: plans around the U", astar_history, astar_module.make_world(), goal),
+    ]
+
+    fig, axes = plt.subplots(1, 4, figsize=(13, 5.2))
+    artists = []
+    for ax, (title, h, world, goal_ne) in zip(axes, panels):
+        ax.set_aspect("equal")
+        ax.set_title(title, fontsize=9)
+        ax.set_xlabel("East [m]")
+        draw_obstacles(ax, world)
+        if goal_ne is not None:
+            ax.plot(goal_ne[1], goal_ne[0], "*", color=GYRO_ONLY_COLOR, markersize=14)
+        if goal_ne is None:  # collision prevention: no goal, a smaller world
+            ax.set_xlim(-4.0, 10.0)
+            ax.set_ylim(-2.0, 14.0)
+        else:
+            ax.set_xlim(-9.0, 9.0)
+            ax.set_ylim(-2.0, 26.0)
+        (path,) = ax.plot([], [], "-", color=TRUE_COLOR, linewidth=2)
+        (scan,) = ax.plot([], [], ".", color=ESTIMATE_COLOR, markersize=3)
+        (drone,) = ax.plot([], [], "o", color=TRUE_COLOR, markersize=7)
+        artists.append((h, path, scan, drone))
+    stick = np.outer(cp["time_s"], cp_module.STICK_VELOCITY_NE_MPS)
+    axes[0].plot(stick[:, 1], stick[:, 0], "--", color=SETPOINT_COLOR, alpha=0.4, label="stick only")
+    axes[0].legend(loc="lower right", fontsize=7)
+    axes[0].set_ylabel("North [m]")
+    clock = fig.text(0.5, 0.02, "", ha="center", family="monospace")
+    fig.suptitle("Obstacle avoidance on the PX4 obstacle_distance scan (72 bins, red dots)", fontweight="bold")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
+
+    step_s = vfh["time_s"][1] - vfh["time_s"][0]
+    end_s = 24.0
+
+    def draw(frame_time_s):
+        for h, path, scan, drone in artists:
+            i = min(int(round(frame_time_s / step_s)), len(h["time_s"]) - 1)
+            p = h["true_position_ned_m"][:, :2]
+            path.set_data(p[:i + 1, 1], p[:i + 1, 0])
+            points = scan_points_ne(p[i], h["scan_distances_m"][i], h["scan_increment_rad"][0])
+            scan.set_data(points[:, 1], points[:, 0])
+            drone.set_data([p[i, 1]], [p[i, 0]])
+        clock.set_text(f"t = {frame_time_s:5.1f} s")
+
+    save_gif(fig, draw, list(np.arange(0.0, end_s, 0.2)), "obstacle_avoidance")
+
+
 GIFS = {
     "step": make_hover_step_response,
     "waypoints2d": make_planar_waypoint_following,
     "ekf": make_planar_ekf,
     "hero": make_quadrotor_waypoint_following,
     "attitude": make_attitude_complementary_filter,
+    "avoidance": make_obstacle_avoidance,
 }
 
 

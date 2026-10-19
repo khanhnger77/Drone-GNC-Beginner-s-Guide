@@ -85,20 +85,25 @@ class MulticopterCascadeController:
         self.setpoints = None
 
     def update(self, position_sp_ned_m, yaw_sp_rad, quaternion, angular_velocity_rps,
-               position_ned_m, velocity_ned_mps, dt_s):
+               position_ned_m, velocity_ned_mps, dt_s, velocity_ff_ned_mps=None):
         """
         Collective thrust [N] and moment in the body frame [N m]
-        position_sp_ned_m: Desired position in NED [m]
+        position_sp_ned_m: Desired position in NED [m]. NaN on an axis = no position control on it
         yaw_sp_rad: Desired yaw [rad]
         quaternion, angular_velocity_rps: Attitude and body rates used for feedback
         position_ned_m, velocity_ned_mps: Position and velocity used for feedback
         dt_s: Time step [s]
+        velocity_ff_ned_mps: Optional velocity feed-forward in NED [m/s], added to the position loop output
         """
 
         p = self.params
 
-        # 1. Position loop (P), with separate horizontal and vertical speed limits
-        velocity_sp = self.position_gain * (np.asarray(position_sp_ned_m) - position_ned_m)
+        # 1. Position loop (P), plus the velocity feed-forward. Like PX4 trajectory_setpoint, a NaN
+        #    position axis is velocity-controlled only (PositionControl: addIfNotNanVector3f).
+        #    Then separate horizontal and vertical speed limits.
+        velocity_sp = np.nan_to_num(self.position_gain * (np.asarray(position_sp_ned_m) - position_ned_m))
+        if velocity_ff_ned_mps is not None:
+            velocity_sp = velocity_sp + velocity_ff_ned_mps
         horizontal_speed = np.linalg.norm(velocity_sp[:2])
         if horizontal_speed > self.max_horizontal_speed_mps:
             velocity_sp[:2] *= self.max_horizontal_speed_mps / horizontal_speed
