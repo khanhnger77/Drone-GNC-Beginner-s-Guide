@@ -14,7 +14,7 @@ and read it next to the lessons. Paths are relative to the PX4 repository root.
 The paths, uORB topics and parameters of the ✅ lessons were checked against `v1.17.0`. Those of the ⬜
 lessons exist at that tag, but their content still has to be read when the lesson is written.
 
-Status: ✅ done, ⬜ planned
+Status: ✅ done, ⬜ planned. Every ✅ lesson has a page in [lessons/](lessons/README.md).
 
 ## Module 0: Foundations
 
@@ -56,7 +56,7 @@ The ladder from a textbook EKF to EKF2. Each step adds one idea.
 | ✅ | 2 | Complementary attitude filter (Mahony) | `attitude_complementary_filter.py` | `src/modules/attitude_estimator_q` (bias learned only when `spinRate < 0.175` rad/s) |
 | ⬜ | 3 | 3D EKF with quaternion attitude | | |
 | ⬜ | 4 | Error-state formulation (3D angle error instead of 4D quaternion) | | `src/modules/ekf2/EKF/covariance.cpp` |
-| ⬜ | 5 | Accel bias, mag field states (24-state EKF2 layout) | | `src/modules/ekf2/EKF/common.h` (state struct) |
+| ⬜ | 5 | Accel bias, mag field, wind and terrain states (EKF2 layout: 25 values at `v1.17.0`) | | `src/modules/ekf2/EKF/python/ekf_derivation/generated/state.h` (`StateSample`) |
 | ⬜ | 6 | Deriving Jacobians symbolically (SymPy) | | `src/modules/ekf2/EKF/python/ekf_derivation/` (SymForce) |
 | ⬜ | 7 | Delayed fusion horizon + output predictor, ring buffers | | `src/modules/ekf2/EKF/output_predictor/`, `src/modules/ekf2/EKF/estimator_interface.cpp` |
 | ⬜ | 8 | Multiple aiding sources, height source selection | | `src/modules/ekf2/EKF/aid_sources/` |

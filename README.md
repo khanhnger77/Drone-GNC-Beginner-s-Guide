@@ -101,6 +101,9 @@ lessons use it:
 The message of the series: PX4 itself only brakes (`CP_DIST`). Steering around obstacles is a planner's
 job, done offboard, and reactive planners need a global one to escape traps.
 
+Each lesson has its own page with the theory, a walk through the code, a table mapping it to PX4
+`v1.17.0`, the numbers you should see, and exercises: [doc/lessons](doc/lessons/README.md).
+
 ## Quick start
 
 ```bash
